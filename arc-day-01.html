@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Day 1: Wallet Setup + First USDC Transfer on Arc</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Georgia, serif;
+      background-color: #ffffff;
+      color: #000000;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 24px;
+      line-height: 1.7;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: bold;
+      border-bottom: 2px solid #000;
+      padding-bottom: 12px;
+      margin-bottom: 28px;
+    }
+
+    h2 {
+      font-size: 1.4rem;
+      font-weight: bold;
+      margin-top: 40px;
+      margin-bottom: 12px;
+      border-left: 4px solid #000;
+      padding-left: 10px;
+    }
+
+    h3 {
+      font-size: 1.1rem;
+      font-weight: bold;
+      margin-top: 24px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      margin-bottom: 12px;
+    }
+
+    ul, ol {
+      margin-left: 24px;
+      margin-bottom: 14px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    code {
+      font-family: "Courier New", Courier, monospace;
+      background-color: #f0f0f0;
+      padding: 2px 6px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+
+    pre {
+      background-color: #f0f0f0;
+      border: 1px solid #aaa;
+      padding: 16px;
+      overflow-x: auto;
+      margin: 14px 0;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      white-space: pre;
+    }
+
+    .section {
+      margin-bottom: 36px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 0.95rem;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      border: 1px solid #000;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background-color: #000;
+      color: #fff;
+    }
+
+    .note {
+      border: 1px solid #000;
+      padding: 12px 16px;
+      margin: 16px 0;
+      background-color: #f9f9f9;
+    }
+
+    .troubleshoot-item {
+      margin-bottom: 14px;
+    }
+
+    .troubleshoot-item .error {
+      font-weight: bold;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #000;
+      margin: 40px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Day 1: Wallet Setup + First USDC Transfer on Arc</h1>
+
+  <div class="section">
+    <h2>What You Will Learn Today</h2>
+    <ul>
+      <li>Connect your wallet to Arc Testnet</li>
+      <li>Get free testnet USDC</li>
+      <li>Send your first USDC transaction using code</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Why Arc? Why Not Ethereum or Polygon?</h2>
+
+    <table class="comparison-table">
+      <tr>
+        <th>Feature</th>
+        <th>Ethereum</th>
+        <th>Arc</th>
+      </tr>
+      <tr>
+        <td>Tokens needed</td>
+        <td>ETH (gas) + USDC (payment) = 2 tokens</td>
+        <td>Only USDC (used for both payment and gas)</td>
+      </tr>
+      <tr>
+        <td>Gas cost</td>
+        <td>$5 to $10, changes every minute</td>
+        <td>$0.01, fixed</td>
+      </tr>
+      <tr>
+        <td>Confirmation time</td>
+        <td>3+ minutes</td>
+        <td>Under 1 second</td>
+      </tr>
+    </table>
+
+    <div class="note">
+      <strong>Example:</strong><br><br>
+      Your friend has 50 USDC on Ethereum but zero ETH.<br>
+      Can they send you 10 USDC? <strong>NO</strong> -> they need ETH for gas.<br><br>
+      Your friend has 50 USDC on Arc.<br>
+      Can they send you 10 USDC? <strong>YES</strong> -> USDC pays for gas.
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Prerequisites</h2>
+
+    <h3>1. VS Code</h3>
+    <ul>
+      <li>Download and install VS Code on your PC.</li>
+      <li>Create a folder anywhere on your drive.</li>
+      <li>In VS Code, click File (top bar) -> Open Folder -> Choose your folder.</li>
+    </ul>
+
+    <h3>2. Node.js</h3>
+    <ul>
+      <li>Download and install Node.js on your PC.</li>
+      <li>To verify, open VS Code terminal and type:</li>
+    </ul>
+    <pre>node -v
+npm -v</pre>
+    <p>If any error shows in your PowerShell then at terminal paste this:</p>
+
+    <div class="note">
+      <h3>Switch VS Code Terminal from PowerShell to CMD</h3>
+
+      <p><strong>Temporarily:</strong></p>
+      <ol>
+        <li>Open VS Code -> Terminal -> New Terminal (Ctrl + Shift + ~)</li>
+        <li>Click the dropdown next to <code>+</code> -> select <strong>Command Prompt</strong></li>
+      </ol>
+
+      <p><strong>Permanently (set as default terminal):</strong></p>
+      <ol>
+        <li>Press <code>Ctrl + ,</code> to open Settings</li>
+        <li>Search: <code>terminal.integrated.defaultProfile.windows</code></li>
+        <li>Set it to: <code>"Command Prompt"</code></li>
+      </ol>
+
+      <h3 style="margin-top: 16px;">Allow PowerShell Scripts to Run (Optional)</h3>
+      <p>If you still need PowerShell scripts to run:</p>
+      <ol>
+        <li>Open PowerShell as Administrator</li>
+        <li>Run this command:</li>
+      </ol>
+      <pre>Set-ExecutionPolicy RemoteSigned</pre>
+      <ol start="3">
+        <li>Press <code>Y</code> to confirm</li>
+      </ol>
+      <p>This allows local scripts to run safely.</p>
+
+      <h3 style="margin-top: 16px;">Revert PowerShell Execution Policy (Do this when your work is finished)</h3>
+      <p><strong>Note:</strong> Do this only when your work is finished, otherwise scripts will stop working again.</p>
+      <ol>
+        <li>Open PowerShell as Administrator</li>
+        <li>Check current policy first (optional):</li>
+      </ol>
+      <pre>Get-ExecutionPolicy -List</pre>
+      <ol start="3">
+        <li>Revert back to the default restricted policy:</li>
+      </ol>
+      <pre>Set-ExecutionPolicy Restricted -Scope LocalMachine</pre>
+      <ol start="4">
+        <li>Confirm with <code>Y</code></li>
+      </ol>
+      <p>Scripts will now be blocked again like before.</p>
+      <p>You can always revert back after your work is done, or change the terminal to CMD instead of PowerShell.</p>
+    </div>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <h2>Step 1: Install Rabby Wallet</h2>
+    <ol>
+      <li>Go to <strong>https://www.rabby.io</strong></li>
+      <li>Click Download</li>
+      <li>Select your browser (Chrome, Firefox, etc.)</li>
+      <li>Click Add to [Your Browser]</li>
+      <li>Click the Rabby icon in your browser toolbar</li>
+      <li>Click Create a new wallet</li>
+      <li>Create a password</li>
+      <li>Backup your seed phrase</li>
+      <li>Confirm your seed phrase by clicking the words in order</li>
+      <li>Your wallet is ready</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Step 2: Connect Rabby to Arc Testnet</h2>
+    <ol>
+      <li>Open Rabby</li>
+      <li>Click the settings icon at the top</li>
+      <li>Click Custom Network</li>
+      <li>Fill in these exact details:</li>
+    </ol>
+    <pre>Network name: Arc Testnet
+RPC URL:      https://rpc.testnet.arc.network
+Chain ID:     5042002
+Currency:     USDC
+Explorer:     https://testnet.arcscan.app</pre>
+    <ol start="5">
+      <li>Click Save</li>
+      <li>Switch to Arc Testnet from the dropdown</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Step 3: Get Free Testnet USDC</h2>
+    <p>On Arc, USDC is used for both sending money and paying transaction fees (gas).</p>
+    <ol>
+      <li>Go to <strong>https://faucet.circle.com</strong></li>
+      <li>Select "Arc Testnet" from the network options</li>
+      <li>Add your wallet address</li>
+      <li>Click Send 20 USDC</li>
+      <li>You should now see 20 USDC in your wallet</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Step 4: Create Your First Arc Project</h2>
+
+    <h3>Open Terminal in VS Code</h3>
+    <ol>
+      <li>Open VS Code</li>
+      <li>Click Terminal -> New Terminal (top bar)</li>
+      <li>You will see a command prompt at the bottom</li>
+    </ol>
+
+    <h3>Create Project Folder</h3>
+    <p>Copy and paste these commands one at a time:</p>
+    <pre>mkdir arc-day-01
+cd arc-day-01
+npm init -y</pre>
+    <p>This creates a folder called <code>arc-day-01</code> and a <code>package.json</code> file that tracks your project info.</p>
+
+    <h3>Install Required Libraries</h3>
+    <pre>npm install @circle-fin/app-kit @circle-fin/adapter-viem-v2 viem typescript tsx</pre>
+    <p>What was installed:</p>
+    <ul>
+      <li><code>@circle-fin/app-kit</code> -> Circle's tool for sending USDC</li>
+      <li><code>viem</code> -> Library for talking to blockchains</li>
+      <li><code>typescript</code> -> Better JavaScript with types</li>
+      <li><code>tsx</code> -> Runs TypeScript code</li>
+    </ul>
+    <p>This takes 1 to 2 minutes. Wait for it to finish.</p>
+  </div>
+
+  <div class="section">
+    <h2>Step 5: Get Your Private Key from Rabby</h2>
+    <ol>
+      <li>Open Rabby</li>
+      <li>Click the settings icon (top right)</li>
+      <li>Click Manage Address -> Click on Address</li>
+      <li>Click Backup Private Key</li>
+      <li>Enter your Rabby password</li>
+      <li>Click Confirm</li>
+      <li>Copy the private key (it looks like: <code>0x1234abcd...</code>)</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Step 6: Create the .env File</h2>
+    <ol>
+      <li>In VS Code, right-click your project folder and select New File</li>
+      <li>Name the file exactly: <code>.env</code></li>
+      <li>Paste the following inside:</li>
+    </ol>
+    <pre>PRIVATE_KEY=your_wallet_private_key_here</pre>
+    <ol start="4">
+      <li>Replace <code>your_wallet_private_key_here</code> with the private key you copied</li>
+      <li>Save the file (Ctrl+S)</li>
+    </ol>
+    <p>Example:</p>
+    <pre>PRIVATE_KEY=0x12345.....</pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 7: Write Your First Transfer Script</h2>
+    <ol>
+      <li>Right-click your project folder in VS Code and select New File</li>
+      <li>Name it: <code>transfer.ts</code></li>
+      <li>Copy and paste this exact code:</li>
+    </ol>
+
+    <pre>// AppKit handles blockchain actions
+import { AppKit } from "@circle-fin/app-kit";
+// Viem adapter signs transactions with your private key
+import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+// SendParams ensures safe, typed transaction data
+import type { SendParams } from "@circle-fin/app-kit";
+
+// Create an instance of App Kit
+const kit = new AppKit();
+
+const sendUSDC = async () => {
+  console.log("Starting USDC transfer on Arc Testnet\n");
+
+  // Step 1: Create adapter from your private key
+  const adapter = createViemAdapterFromPrivateKey({
+    privateKey: process.env.PRIVATE_KEY as string,
+  });
+
+  console.log("Wallet connected");
+
+  // Step 2: Define the transfer details
+  const sendParams: SendParams = {
+    from: {
+      adapter,
+      chain: "Arc_Testnet"
+    },
+    to: "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1", // Replace with your recipient
+    amount: "1.00", // Sending 1 USDC
+    token: "USDC",
+  };
+
+  console.log("Preparing to send:", sendParams.amount, "USDC");
+  console.log("To address:", sendParams.to);
+
+  // Step 3: Estimate the gas fee first
+  console.log("\nEstimating transaction cost...");
+  const estimate = await kit.estimateSend(sendParams);
+  console.log("Estimated gas fee:", estimate.fee, "USDC");
+  console.log(
+    "Total cost:",
+    (parseFloat(sendParams.amount) + parseFloat(estimate.fee)).toFixed(6),
+    "USDC"
+  );
+
+  // Step 4: Send the transaction
+  console.log("\nSending transaction...");
+  const result = await kit.send(sendParams);
+
+  // Step 5: Show results
+  console.log("\nSUCCESS! Transaction completed");
+  console.log("----------------------------------");
+  console.log("Transaction Hash:", result.txHash);
+  console.log("View on Explorer:", result.explorerUrl);
+  console.log("----------------------------------");
+};
+
+// Run the transfer function
+sendUSDC().catch((error) => {
+  console.error("Error:", error.message);
+  process.exit(1);
+});</pre>
+
+    <ol start="4">
+      <li>Save the file (Ctrl+S)</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <h2>Step 8: Run Your First Transfer</h2>
+    <p>In the VS Code terminal, run:</p>
+    <pre>npx tsx --env-file=.env transfer.ts</pre>
+
+    <p>What you will see:</p>
+    <pre>Starting USDC transfer on Arc Testnet
+
+Wallet connected
+Preparing to send: 1.00 USDC
+To address: 0x742d....
+Estimating transaction cost...
+Estimated gas fee: 0.010000 USDC
+Total cost: 1.010000 USDC
+Sending transaction...
+SUCCESS! Transaction completed
+------------------------------------------
+Transaction Hash: 0x1234567890abcdef...
+View on Explorer: https://testnet.arcscan.app/tx/0x1234...
+------------------------------------------</pre>
+  </div>
+
+  <div class="section">
+    <h2>Step 9: Verify Your Transaction</h2>
+
+    <h3>View on Block Explorer</h3>
+    <ol>
+      <li>Copy the explorer URL from your terminal output</li>
+      <li>Paste it in your browser</li>
+      <li>You will see:
+        <ul>
+          <li>Status: Success</li>
+          <li>From: Your wallet address</li>
+          <li>To: Recipient address</li>
+          <li>Value: 1.00 USDC</li>
+          <li>Gas Fee: ~0.01 USDC</li>
+          <li>Confirmation time: under 1 second</li>
+        </ul>
+      </li>
+    </ol>
+
+    <h3>Check Your Rabby Balance</h3>
+    <ol>
+      <li>Open Rabby</li>
+      <li>Your balance should now reflect:
+        <ul>
+          <li>1.00 USDC sent</li>
+          <li>0.01 USDC used as gas fee</li>
+          <li>Remaining balance updated accordingly</li>
+        </ul>
+      </li>
+    </ol>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <h2>Troubleshooting</h2>
+
+    <div class="troubleshoot-item">
+      <p class="error">Error: Cannot find module '@circle-fin/app-kit'</p>
+      <p>Fix: Run the following command:</p>
+      <pre>npm install @circle-fin/app-kit @circle-fin/adapter-viem-v2 viem</pre>
+    </div>
+
+    <div class="troubleshoot-item">
+      <p class="error">Error: Private key is not defined</p>
+      <p>Fix: Check your <code>.env</code> file. Make sure it contains:</p>
+      <pre>PRIVATE_KEY=0x...</pre>
+    </div>
+
+    <div class="troubleshoot-item">
+      <p class="error">Error: Insufficient funds</p>
+      <p>Fix: Get more testnet USDC from <strong>https://faucet.circle.com</strong></p>
+    </div>
+
+    <div class="troubleshoot-item">
+      <p class="error">Error: Invalid address</p>
+      <p>Fix: Make sure the recipient address starts with <code>0x</code> and is exactly 42 characters long.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>What You Learned</h2>
+
+    <h3>Technical Skills</h3>
+    <ul>
+      <li>Set up a crypto wallet</li>
+      <li>Interact with a blockchain</li>
+      <li>Write TypeScript code</li>
+      <li>Use environment variables securely</li>
+      <li>Read blockchain transactions</li>
+    </ul>
+
+    <h3>Concepts</h3>
+    <ul>
+      <li>What is USDC</li>
+      <li>Why Arc uses USDC as gas</li>
+      <li>How private keys work</li>
+      <li>What is a testnet</li>
+      <li>How to verify transactions</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Homework (Optional)</h2>
+    <p>Before Day 2, try:</p>
+    <ol>
+      <li>Send USDC to a different address</li>
+      <li>Send a different amount (try 0.50 USDC)</li>
+      <li>Send USDC to yourself</li>
+      <li>Check the transaction on the block explorer</li>
+    </ol>
+    <p>Get comfortable with the flow. We will build on this tomorrow.</p>
+  </div>
+
+  <hr />
+
+  <div class="section">
+    <h2>Need Help?</h2>
+    <ol>
+      <li>Read the error message carefully</li>
+      <li>Check the troubleshooting section above</li>
+      <li>Make sure you completed all steps in order</li>
+      <li>Verify your <code>.env</code> file has the correct private key</li>
+      <li>If the issue persists, comment on the post</li>
+    </ol>
+  </div>
+
+  <p><strong>Ready for Day 2? See you tomorrow!</strong></p>
+
+</body>
+</html>
