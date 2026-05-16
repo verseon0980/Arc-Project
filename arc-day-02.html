@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Day 2: Read Wallet Balance and Transaction History</title>
+  <title>Day 2: Read Wallet Balance and Transaction History - CORRECTED</title>
   <style>
     * {
       margin: 0;
@@ -82,25 +82,6 @@
       margin-bottom: 36px;
     }
 
-    .comparison-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 16px 0;
-      font-size: 0.95rem;
-    }
-
-    .comparison-table th,
-    .comparison-table td {
-      border: 1px solid #000;
-      padding: 8px 12px;
-      text-align: left;
-    }
-
-    .comparison-table th {
-      background-color: #000;
-      color: #fff;
-    }
-
     .note {
       border: 1px solid #000;
       padding: 12px 16px;
@@ -108,12 +89,11 @@
       background-color: #f9f9f9;
     }
 
-    .troubleshoot-item {
-      margin-bottom: 14px;
-    }
-
-    .troubleshoot-item .error {
-      font-weight: bold;
+    .warning {
+      border: 2px solid #d00;
+      padding: 12px 16px;
+      margin: 16px 0;
+      background-color: #fff5f5;
     }
 
     hr {
@@ -125,7 +105,7 @@
 </head>
 <body>
 
-  <h1>Day 2: Read Wallet Balance and Transaction History</h1>
+  <h1>Day 2: Read Wallet Balance and Transaction History (CORRECTED)</h1>
 
   <div class="section">
     <h2>What You Will Learn Today</h2>
@@ -136,66 +116,23 @@
     </ul>
   </div>
 
-  <div class="section">
-    <h2>Why Are We Doing This?</h2>
-
-    <h3>Why can't I just look at Rabby to see my balance?</h3>
-    <p>You are right. Rabby shows your balance perfectly.</p>
-    <p>But here is why we need code:</p>
-    <p>Imagine you are building the next Venmo or Cash App on Arc.</p>
-
-    <div class="note">
-      <p><strong>User opens your app. What do they see first?</strong></p>
-      <p>"Your Balance: 127.50 USDC"</p>
-      <br>
-      <p>Your app needs to <strong>fetch this balance</strong> and <strong>display it</strong> in your own UI.</p>
-      <p>You cannot tell users: "Open Rabby in another tab to check your balance" - that is terrible UX.</p>
-    </div>
-
-    <h3>What We Are Building</h3>
-    <p>By the end of today, you will have scripts that:</p>
+  <div class="warning">
+    <p><strong>IMPORTANT: SDK Issues Fixed</strong></p>
+    <p>The original tutorial code has several breaking issues with the current SDK versions:</p>
     <ul>
-      <li>Check USDC balance in any wallet</li>
-      <li>Show recent transaction history</li>
-      <li>Display transaction details (amount, from, to, timestamp)</li>
+      <li><code>kit.getBalance()</code> does not exist in the installed SDK</li>
+      <li><code>adapter.getAddress()</code> requires <code>{ chain: "Arc_Testnet" }</code> parameter</li>
+      <li>Arc USDC uses 18 decimals (like ETH), not 6</li>
     </ul>
-    <p>This is the foundation of any payment app dashboard.</p>
-  </div>
-
-  <div class="section">
-    <h2>Prerequisites</h2>
-    <ul>
-      <li>Day 1 completed (you have a wallet with testnet USDC)</li>
-      <li>Your <code>arc-project</code> folder still exists</li>
-      <li>You remember how to open Terminal in VS Code</li>
-    </ul>
+    <p>This corrected version uses direct viem calls instead of the broken SDK methods.</p>
   </div>
 
   <hr />
 
   <div class="section">
     <h2>Step 1: Navigate to Your Project Folder</h2>
-
-    <h3>Important: Use the Same Folder from Day 1</h3>
-    <p>You already have <code>arc-project</code> folder with packages installed. We will add new files to this same folder.</p>
-
     <p>Open Terminal in VS Code and run:</p>
     <pre>cd arc-project</pre>
-
-    <p>Verify you are in the right folder. Run:</p>
-    <pre>ls</pre>
-
-    <p>You should see:</p>
-    <ul>
-      <li><code>.env</code> (your private key)</li>
-      <li><code>package.json</code></li>
-      <li><code>node_modules</code> folder</li>
-      <li><code>transfer.ts</code> (from Day 1)</li>
-    </ul>
-
-    <div class="note">
-      <p><strong>No need to install packages again.</strong> We already have everything from Day 1.</p>
-    </div>
   </div>
 
   <div class="section">
@@ -208,32 +145,39 @@
       <li>Copy and paste this code:</li>
     </ol>
 
-    <pre>import { AppKit } from "@circle-fin/app-kit";
-import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+    <pre>import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+import { createPublicClient, http, formatUnits, defineChain } from "viem";
 
-// Initialize App Kit
-const kit = new AppKit();
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  network: "arc-testnet",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+  rpcUrls: {
+    default: { http: ["https://rpc.testnet.arc.network"] },
+    public: { http: ["https://rpc.testnet.arc.network"] },
+  },
+});
 
 const checkBalance = async () => {
   console.log("Checking your USDC balance on Arc Testnet\n");
 
-  // Create adapter from your private key
   const adapter = createViemAdapterFromPrivateKey({
     privateKey: process.env.PRIVATE_KEY as string,
   });
 
-  // Get your wallet address
-  const address = await adapter.getAddress();
+  // FIX: getAddress requires chain parameter
+  const address = await adapter.getAddress({ chain: "Arc_Testnet" });
   console.log("Your wallet address:", address);
   console.log("----------------------------------\n");
 
   try {
-    // Fetch USDC balance on Arc Testnet
-    const balance = await kit.getBalance({
-      adapter,
-      chain: "Arc_Testnet",
-      token: "USDC",
-    });
+    // FIX: Use viem's getBalance directly instead of broken kit.getBalance
+    const client = createPublicClient({ chain: arcTestnet, transport: http() });
+    const raw = await client.getBalance({ address });
+    
+    // FIX: Arc USDC uses 18 decimals, not 6
+    const balance = formatUnits(raw, 18);
 
     console.log("Balance fetched successfully");
     console.log("----------------------------------");
@@ -249,7 +193,6 @@ const checkBalance = async () => {
   }
 };
 
-// Run the balance checker
 checkBalance();</pre>
 
     <ol start="4">
@@ -257,27 +200,22 @@ checkBalance();</pre>
     </ol>
 
     <h3>Run the Script</h3>
-    <p>In terminal:</p>
     <pre>npx tsx --env-file=.env check-balance.ts</pre>
 
     <h3>Expected Output</h3>
     <pre>Checking your USDC balance on Arc Testnet
 
-Your wallet address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1
+Your wallet address: 0x6967b953509306348d42D541B4AA35d6aB1123AE
 ----------------------------------
 
 Balance fetched successfully
 ----------------------------------
-USDC Balance: 18.99 USDC
+USDC Balance: 37.998877665544 USDC
 ----------------------------------</pre>
   </div>
 
   <div class="section">
     <h2>Step 3: Check Balance on Multiple Chains</h2>
-
-    <h3>Why This Matters</h3>
-    <p>Arc supports Unified Balance. Your USDC across multiple chains shows as one balance.</p>
-    <p>Let's see how to check USDC on different chains.</p>
 
     <h3>Create Multi-Chain Balance Checker</h3>
     <ol>
@@ -286,10 +224,31 @@ USDC Balance: 18.99 USDC
       <li>Copy and paste this code:</li>
     </ol>
 
-    <pre>import { AppKit } from "@circle-fin/app-kit";
-import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+    <pre>import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+import { createPublicClient, http, formatUnits, defineChain } from "viem";
+import { baseSepolia } from "viem/chains";
 
-const kit = new AppKit();
+const arcTestnet = defineChain({
+  id: 5042002,
+  name: "Arc Testnet",
+  network: "arc-testnet",
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+  rpcUrls: {
+    default: { http: ["https://rpc.testnet.arc.network"] },
+    public: { http: ["https://rpc.testnet.arc.network"] },
+  },
+});
+
+// Official Circle USDC on Base Sepolia
+const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+
+const ERC20_ABI = [{
+  name: "balanceOf",
+  type: "function",
+  stateMutability: "view",
+  inputs: [{ name: "account", type: "address" }],
+  outputs: [{ name: "", type: "uint256" }],
+}] as const;
 
 const checkMultiChainBalance = async () => {
   console.log("Checking USDC balance across multiple chains\n");
@@ -298,38 +257,31 @@ const checkMultiChainBalance = async () => {
     privateKey: process.env.PRIVATE_KEY as string,
   });
 
-  const address = await adapter.getAddress();
+  const address = await adapter.getAddress({ chain: "Arc_Testnet" });
   console.log("Wallet:", address);
   console.log("----------------------------------\n");
 
-  // List of chains to check
-  const chains = [
-    "Arc_Testnet",
-    "Ethereum_Sepolia",
-    "Base_Sepolia",
-  ];
+  // Arc Testnet — USDC is native token (18 decimals like ETH)
+  const arcClient = createPublicClient({ chain: arcTestnet, transport: http() });
+  const arcRaw = await arcClient.getBalance({ address });
+  const arcBalance = formatUnits(arcRaw, 18);
+  console.log(`Arc_Testnet:      ${arcBalance} USDC`);
 
-  let totalBalance = 0;
+  // Base Sepolia — USDC is ERC-20 (6 decimals)
+  const baseClient = createPublicClient({ chain: baseSepolia, transport: http() });
+  const baseRaw = await baseClient.readContract({
+    address: BASE_SEPOLIA_USDC,
+    abi: ERC20_ABI,
+    functionName: "balanceOf",
+    args: [address],
+  });
+  const baseBalance = formatUnits(baseRaw, 6);
+  console.log(`Base_Sepolia:     ${baseBalance} USDC`);
 
-  for (const chain of chains) {
-    try {
-      const balance = await kit.getBalance({
-        adapter,
-        chain: chain as any,
-        token: "USDC",
-      });
-
-      console.log(`${chain}: ${balance} USDC`);
-      totalBalance += parseFloat(balance);
-    } catch (error) {
-      console.log(`${chain}: Unable to fetch (might not have USDC here)`);
-    }
-  }
-
+  const total = parseFloat(arcBalance) + parseFloat(baseBalance);
   console.log("\n----------------------------------");
-  console.log("Total USDC across all chains:", totalBalance.toFixed(2), "USDC");
+  console.log("Total USDC across all chains:", total.toFixed(2), "USDC");
   console.log("----------------------------------");
-  
   console.log("\nThis is how Arc's Unified Balance works.");
   console.log("You can spend USDC from ANY chain in one transaction.");
 };
@@ -342,27 +294,19 @@ checkMultiChainBalance();</pre>
 
     <h3>Run It</h3>
     <pre>npx tsx --env-file=.env multi-chain-balance.ts</pre>
-
-    <h3>Expected Output</h3>
-    <pre>Checking USDC balance across multiple chains
-
-Wallet: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1
-----------------------------------
-
-Arc_Testnet: 18.99 USDC
-Ethereum_Sepolia: Unable to fetch (might not have USDC here)
-Polygon_Amoy: Unable to fetch (might not have USDC here)
-
-----------------------------------
-Total USDC across all chains: 18.99 USDC
-----------------------------------
-
-This is how Arc's Unified Balance works.
-You can spend USDC from ANY chain in one transaction.</pre>
   </div>
 
   <div class="section">
     <h2>Step 4: View Transaction History</h2>
+
+    <div class="note">
+      <p><strong>Why Some Transactions Don't Show:</strong></p>
+      <ol>
+        <li><strong>Faucet/Mint Transactions:</strong> When you get USDC from the faucet, it's a MINT event (from zero address 0x000...000), not a regular Transfer. The code below shows these as "RECEIVED (Faucet/Mint)".</li>
+        <li><strong>Block Scan Range:</strong> We scan the last 50,000 blocks (~28 hours on Arc). Older transactions won't appear. View full history on the explorer.</li>
+        <li><strong>Base Sepolia Transactions from Rabby:</strong> If you transferred USDC in Rabby UI but see 0 results, the transaction happened but is outside the 50,000 block scan window. Check sepolia.basescan.org for the exact block number.</li>
+      </ol>
+    </div>
 
     <h3>Create Transaction History Viewer</h3>
     <ol>
@@ -371,163 +315,175 @@ You can spend USDC from ANY chain in one transaction.</pre>
       <li>Copy and paste this code:</li>
     </ol>
 
-    <pre>import { createPublicClient, http, formatUnits } from "viem";
-import { defineChain } from "viem";
+    <pre>import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+import { createPublicClient, http, formatUnits, defineChain, parseAbiItem } from "viem";
+import { baseSepolia } from "viem/chains";
 
-// Define Arc Testnet chain
 const arcTestnet = defineChain({
   id: 5042002,
   name: "Arc Testnet",
   network: "arc-testnet",
-  nativeCurrency: { 
-    name: "USDC", 
-    symbol: "USDC", 
-    decimals: 6 
-  },
+  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
   rpcUrls: {
     default: { http: ["https://rpc.testnet.arc.network"] },
     public: { http: ["https://rpc.testnet.arc.network"] },
   },
-  blockExplorers: {
-    default: {
-      name: "ArcScan",
-      url: "https://testnet.arcscan.app",
-    },
-  },
 });
 
-// Create a client to read blockchain data
-const client = createPublicClient({
-  chain: arcTestnet,
-  transport: http(),
-});
+const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const arcClient = createPublicClient({ chain: arcTestnet, transport: http() });
+const baseClient = createPublicClient({ chain: baseSepolia, transport: http() });
 
-const getTransactionHistory = async (walletAddress: string) => {
-  console.log("Fetching recent transactions on Arc Testnet\n");
-  console.log("Wallet:", walletAddress);
-  console.log("----------------------------------\n");
+const TRANSFER_EVENT = parseAbiItem(
+  "event Transfer(address indexed from, address indexed to, uint256 value)"
+);
 
-  try {
-    // Get the latest block number
-    const latestBlock = await client.getBlockNumber();
-    console.log("Latest block:", latestBlock.toString());
-    console.log("Scanning last 20 blocks for transactions\n");
+const CHUNK = 9000n; // Arc RPC limits getLogs to 10,000 blocks
 
-    const transactions: any[] = [];
-
-    // Scan the last 20 blocks
-    for (let i = 0; i < 20; i++) {
-      const blockNumber = latestBlock - BigInt(i);
-      
-      try {
-        const block = await client.getBlock({ 
-          blockNumber,
-          includeTransactions: true,
-        });
-
-        // Filter transactions involving our wallet
-        if (block.transactions) {
-          for (const tx of block.transactions as any[]) {
-            if (
-              tx.from?.toLowerCase() === walletAddress.toLowerCase() ||
-              tx.to?.toLowerCase() === walletAddress.toLowerCase()
-            ) {
-              transactions.push({
-                hash: tx.hash,
-                from: tx.from,
-                to: tx.to,
-                value: tx.value,
-                blockNumber: block.number,
-                timestamp: block.timestamp,
-              });
-            }
-          }
-        }
-      } catch (error) {
-        // Skip blocks that cannot be fetched
-        continue;
-      }
-    }
-
-    // Display results
-    if (transactions.length === 0) {
-      console.log("No transactions found in the last 20 blocks.");
-      console.log("\nTry:");
-      console.log("- Sending a transaction (run Day 1 script)");
-      console.log("- Checking a different wallet address");
-    } else {
-      console.log(`Found ${transactions.length} transaction(s):\n`);
-      console.log("----------------------------------");
-
-      transactions.forEach((tx, index) => {
-        const date = new Date(Number(tx.timestamp) * 1000);
-        const direction = tx.from.toLowerCase() === walletAddress.toLowerCase() 
-          ? "SENT" 
-          : "RECEIVED";
-        
-        console.log(`\nTransaction #${index + 1}:`);
-        console.log(`${direction}`);
-        console.log(`From: ${tx.from}`);
-        console.log(`To: ${tx.to}`);
-        console.log(`Amount: ${formatUnits(tx.value, 6)} USDC`);
-        console.log(`Time: ${date.toLocaleString()}`);
-        console.log(`Block: ${tx.blockNumber.toString()}`);
-        console.log(`Hash: ${tx.hash}`);
-        console.log(`View: https://testnet.arcscan.app/tx/${tx.hash}`);
-      });
-
-      console.log("\n----------------------------------");
-    }
-
-  } catch (error: any) {
-    console.error("Error:", error.message);
-    console.log("\nMake sure:");
-    console.log("- You have internet connection");
-    console.log("- The wallet address is valid (starts with 0x)");
+// Fetch logs in chunks to avoid RPC limit errors
+const getLogsInChunks = async (
+  client: any,
+  fromBlock: bigint,
+  toBlock: bigint,
+  contractAddress?: `0x${string}`
+) => {
+  const allLogs: any[] = [];
+  for (let start = fromBlock; start <= toBlock; start += CHUNK) {
+    const end = start + CHUNK - 1n < toBlock ? start + CHUNK - 1n : toBlock;
+    const logs = await client.getLogs({
+      ...(contractAddress ? { address: contractAddress } : {}),
+      event: TRANSFER_EVENT,
+      fromBlock: start,
+      toBlock: end,
+    }).catch(() => []);
+    allLogs.push(...logs);
+    process.stdout.write(".");
   }
+  return allLogs;
 };
 
-// Replace with your wallet address
-const MY_WALLET = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";
+const getTransactionHistory = async (address: `0x${string}`) => {
+  console.log("Wallet:", address);
+  console.log("----------------------------------\n");
 
-getTransactionHistory(MY_WALLET);</pre>
+  // ── Arc Testnet (scans last 50,000 blocks ~= 28 hours) ────────
+  console.log("=== Arc Testnet USDC Transactions ===");
+  process.stdout.write("Scanning");
+
+  const arcLatest = await arcClient.getBlockNumber();
+  const arcFrom = arcLatest > 50000n ? arcLatest - 50000n : 0n;
+  const arcAllLogs = await getLogsInChunks(arcClient, arcFrom, arcLatest);
+
+  // Filter for transactions involving your address (sent OR received)
+  const arcLogs = arcAllLogs
+    .filter((log: any) => {
+      const from = log.args.from?.toLowerCase();
+      const to = log.args.to?.toLowerCase();
+      const me = address.toLowerCase();
+      return from === me || to === me;
+    })
+    .sort((a: any, b: any) => Number(b.blockNumber) - Number(a.blockNumber));
+
+  console.log(" done!\n");
+
+  if (arcLogs.length === 0) {
+    console.log("No transactions found in last 50,000 blocks on Arc Testnet.");
+    console.log(`View all: https://testnet.arcscan.app/address/${address}\n`);
+  } else {
+    console.log(`Found ${arcLogs.length} transaction(s):\n`);
+    arcLogs.forEach((log: any, i: number) => {
+      const from = log.args.from?.toLowerCase();
+      const me = address.toLowerCase();
+      let dir = "RECEIVED";
+      if (from === me) dir = "SENT";
+      if (from === ZERO_ADDRESS) dir = "RECEIVED (Faucet/Mint)";
+
+      console.log(`#${i + 1} ${dir}`);
+      console.log(`  From:   ${log.args.from}`);
+      console.log(`  To:     ${log.args.to}`);
+      console.log(`  Amount: ${formatUnits(log.args.value, 18)} USDC`);
+      console.log(`  Block:  ${log.blockNumber}`);
+      console.log(`  Hash:   ${log.transactionHash}`);
+      console.log(`  View:   https://testnet.arcscan.app/tx/${log.transactionHash}\n`);
+    });
+  }
+
+  // ── Base Sepolia (scans last 50,000 blocks ~= 7 days) ─────────
+  console.log("=== Base Sepolia USDC Transactions ===");
+  process.stdout.write("Scanning");
+
+  const baseLatest = await baseClient.getBlockNumber();
+  const baseFrom = baseLatest > 50000n ? baseLatest - 50000n : 0n;
+  const baseAllLogs = await getLogsInChunks(
+    baseClient,
+    baseFrom,
+    baseLatest,
+    BASE_SEPOLIA_USDC
+  );
+
+  const baseLogs = baseAllLogs
+    .filter((log: any) => {
+      const from = log.args.from?.toLowerCase();
+      const to = log.args.to?.toLowerCase();
+      const me = address.toLowerCase();
+      return from === me || to === me;
+    })
+    .sort((a: any, b: any) => Number(b.blockNumber) - Number(a.blockNumber));
+
+  console.log(" done!\n");
+
+  if (baseLogs.length === 0) {
+    console.log("No USDC transfers found in last 50,000 blocks on Base Sepolia.");
+    console.log(`View all: https://sepolia.basescan.org/address/${address}\n`);
+  } else {
+    console.log(`Found ${baseLogs.length} transaction(s):\n`);
+    baseLogs.forEach((log: any, i: number) => {
+      const from = log.args.from?.toLowerCase();
+      const me = address.toLowerCase();
+      let dir = "RECEIVED";
+      if (from === me) dir = "SENT";
+      if (from === ZERO_ADDRESS) dir = "RECEIVED (Faucet/Mint)";
+
+      console.log(`#${i + 1} ${dir}`);
+      console.log(`  From:   ${log.args.from}`);
+      console.log(`  To:     ${log.args.to}`);
+      console.log(`  Amount: ${formatUnits(log.args.value, 6)} USDC`);
+      console.log(`  Block:  ${log.blockNumber}`);
+      console.log(`  Hash:   ${log.transactionHash}`);
+      console.log(`  View:   https://sepolia.basescan.org/tx/${log.transactionHash}\n`);
+    });
+  }
+
+  console.log("----------------------------------");
+  console.log(`Full Arc history:  https://testnet.arcscan.app/address/${address}`);
+  console.log(`Full Base history: https://sepolia.basescan.org/address/${address}`);
+};
+
+const adapter = createViemAdapterFromPrivateKey({
+  privateKey: process.env.PRIVATE_KEY as string,
+});
+
+adapter.getAddress({ chain: "Arc_Testnet" }).then((address) => {
+  getTransactionHistory(address as `0x${string}`);
+});</pre>
 
     <ol start="4">
-      <li>Find this line:</li>
-    </ol>
-    <pre>const MY_WALLET = "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1";</pre>
-    <ol start="5">
-      <li>Replace with your wallet address from Rabby</li>
       <li>Save the file</li>
     </ol>
 
     <h3>Run It</h3>
-    <pre>npx tsx transaction-history.ts</pre>
+    <pre>npx tsx --env-file=.env transaction-history.ts</pre>
 
-    <h3>Expected Output</h3>
-    <pre>Fetching recent transactions on Arc Testnet
-
-Wallet: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1
-----------------------------------
-
-Latest block: 1234567
-Scanning last 20 blocks for transactions
-
-Found 1 transaction(s):
-
-----------------------------------
-
-Transaction #1:
-SENT
-From: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb1
-To: 0x123abc...
-Amount: 1.00 USDC
-Time: 5/15/2026, 2:30:45 PM
-Block: 1234560
-Hash: 0xabc123...
-View: https://testnet.arcscan.app/tx/0xabc123...
-
-----------------------------------</pre>
+    <div class="note">
+      <p><strong>Transaction History Explanation:</strong></p>
+      <p>This script scans the blockchain for Transfer events. Here's what shows and what doesn't:</p>
+      <ul>
+        <li><strong>Shows:</strong> Transfers you sent, transfers you received (including faucet mints from zero address)</li>
+        <li><strong>Doesn't show:</strong> Transactions older than 50,000 blocks (~28 hours on Arc, ~7 days on Base Sepolia)</li>
+        <li><strong>Why 50,000 blocks?</strong> Arc RPC limits <code>eth_getLogs</code> to 10,000 block ranges. We chunk into 9,000-block batches and scan 6 chunks total.</li>
+      </ul>
+    </div>
   </div>
 
   <div class="section">
@@ -540,12 +496,8 @@ View: https://testnet.arcscan.app/tx/0xabc123...
       <li>Copy and paste this code:</li>
     </ol>
 
-    <pre>import { AppKit } from "@circle-fin/app-kit";
-import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
-import { createPublicClient, http } from "viem";
-import { defineChain } from "viem";
-
-const kit = new AppKit();
+    <pre>import { createViemAdapterFromPrivateKey } from "@circle-fin/adapter-viem-v2";
+import { createPublicClient, http, formatUnits, defineChain } from "viem";
 
 const arcTestnet = defineChain({
   id: 5042002,
@@ -568,26 +520,20 @@ const showDashboard = async () => {
     privateKey: process.env.PRIVATE_KEY as string,
   });
 
-  const address = await adapter.getAddress();
-  
-  // Fetch balance
-  const balance = await kit.getBalance({
-    adapter,
-    chain: "Arc_Testnet",
-    token: "USDC",
-  });
+  const address = await adapter.getAddress({ chain: "Arc_Testnet" });
 
-  // Get latest block (for recent activity indicator)
+  const raw = await client.getBalance({ address });
+  const balance = formatUnits(raw, 18);
+
   const latestBlock = await client.getBlockNumber();
 
-  // Display dashboard
   console.clear();
   console.log("\n");
   console.log("-----------------------------------------");
   console.log("         MY ARC PAYMENT APP");
   console.log("-----------------------------------------");
   console.log("\n");
-  
+
   console.log("-------------------------------------------------");
   console.log("  Wallet");
   console.log(`  ${address.slice(0, 20)}...`);
@@ -635,133 +581,54 @@ showDashboard();</pre>
 
     <h3>Run It</h3>
     <pre>npx tsx --env-file=.env dashboard.ts</pre>
-
-    <h3>Expected Output</h3>
-    <pre>-----------------------------------------
-         MY ARC PAYMENT APP
------------------------------------------
-
-
--------------------------------------------------
-  Wallet
-  0x742d35Cc6634C053...
--------------------------------------------------
-
-
--------------------------------------------------
-  Your Balance
-
-           18.99 USDC
-
--------------------------------------------------
-
-
--------------------------------------------------
-  Quick Actions
-
-  [1] Send Money
-  [2] Request Money
-  [3] View History
-  [4] Settings
-
--------------------------------------------------
-
-
--------------------------------------------------
-  Network Status
-
-  Chain: Arc Testnet
-  Latest Block: 1234567
-  Status: Connected
-
--------------------------------------------------
-
-
-This is what the data looks like in a real app.
-In Day 13-16, we will build the actual UI.</pre>
   </div>
 
   <hr />
 
   <div class="section">
-    <h2>Common Questions</h2>
+    <h2>Summary of Code Fixes</h2>
 
-    <h3>Q1: Why do I need code for this? Rabby already shows my balance.</h3>
-    <p>You are building an APP. Users will use YOUR app, not Rabby. Think about Cash App. Do they tell users to "check Rabby"? No. They fetch the balance and show it in their own beautiful UI.</p>
-
-    <h3>Q2: What is the difference between balance and transaction history?</h3>
-    <p><strong>Balance</strong> = How much you have RIGHT NOW (one number: 18.99 USDC)</p>
-    <p><strong>History</strong> = List of all past transactions (sent $10 to John, received $5 from Sarah, etc.)</p>
-
-    <h3>Q3: Why scan only 20 blocks? What if my transaction is older?</h3>
-    <p>20 blocks is just for learning. In a real app, you would:</p>
+    <h3>1. Balance Checking</h3>
     <ul>
-      <li>Store transactions in a database</li>
-      <li>Use blockchain indexers (like The Graph)</li>
-      <li>Or scan more blocks (but it takes longer)</li>
+      <li><strong>Problem:</strong> <code>kit.getBalance()</code> does not exist in the SDK</li>
+      <li><strong>Fix:</strong> Use <code>client.getBalance({ address })</code> with viem directly</li>
+      <li><strong>Problem:</strong> Tutorial says Arc USDC has 6 decimals</li>
+      <li><strong>Fix:</strong> Arc USDC is the native gas token and uses 18 decimals (like ETH)</li>
     </ul>
 
-    <h3>Q4: Can I check someone else's balance?</h3>
-    <p>YES. Blockchain is public. You can check ANY wallet's balance if you know their address. But you cannot SEND their money. You need their private key for that.</p>
-
-    <h3>Q5: What is Unified Balance?</h3>
-    <p>Imagine you have:</p>
+    <h3>2. Adapter Address Resolution</h3>
     <ul>
-      <li>10 USDC on Ethereum</li>
-      <li>5 USDC on Polygon</li>
-      <li>3 USDC on Arc</li>
+      <li><strong>Problem:</strong> <code>adapter.getAddress()</code> throws "chain parameter is required"</li>
+      <li><strong>Fix:</strong> Always pass <code>{ chain: "Arc_Testnet" }</code></li>
     </ul>
-    <p>Arc's Unified Balance shows: <strong>18 USDC total</strong> and lets you spend from all chains in one transaction.</p>
 
-    <h3>Q6: Why does transaction history take longer to load than balance?</h3>
-    <p>Balance is ONE number (fast to fetch). History requires scanning multiple blocks and filtering transactions (slower). Real apps use databases to cache this.</p>
+    <h3>3. Transaction History</h3>
+    <ul>
+      <li><strong>Problem:</strong> Faucet mints don't show (from zero address)</li>
+      <li><strong>Fix:</strong> Filter logs to include <code>to === yourAddress</code>, which catches mints</li>
+      <li><strong>Problem:</strong> Arc RPC error "eth_getLogs is limited to a 10,000 range"</li>
+      <li><strong>Fix:</strong> Split into 9,000-block chunks and scan in batches</li>
+      <li><strong>Problem:</strong> Base Sepolia shows 0 even though you transferred via Rabby</li>
+      <li><strong>Reason:</strong> Transaction is older than 50,000 blocks. Increase scan range or check basescan.org for exact block number</li>
+    </ul>
+  </div>
+
+  <div class="section">
+    <h2>Your Project Folder Now</h2>
+    <pre>arc-project/
+├── .env
+├── package.json
+├── node_modules/
+├── transfer.ts              (from Day 1)
+├── check-balance.ts         (corrected)
+├── multi-chain-balance.ts   (corrected)
+├── transaction-history.ts   (corrected)
+└── dashboard.ts             (corrected)</pre>
   </div>
 
   <hr />
 
-  <div class="section">
-    <h2>Troubleshooting</h2>
-
-    <div class="troubleshoot-item">
-      <p class="error">Error: Failed to fetch balance</p>
-      <p>Fix:</p>
-      <ul>
-        <li>Check internet connection</li>
-        <li>Verify private key in .env file</li>
-        <li>Make sure you are using Arc_Testnet (not mainnet)</li>
-      </ul>
-    </div>
-
-    <div class="troubleshoot-item">
-      <p class="error">Error: Cannot read properties of undefined</p>
-      <p>Fix:</p>
-      <ul>
-        <li>Make sure you ran <code>npm install</code> in Day 1</li>
-        <li>Restart terminal and try again</li>
-      </ul>
-    </div>
-
-    <div class="troubleshoot-item">
-      <p class="error">Transaction history shows nothing</p>
-      <p>This is normal if:</p>
-      <ul>
-        <li>You have not sent any transactions yet</li>
-        <li>Your transactions are older than 20 blocks</li>
-      </ul>
-      <p>Fix: Run the Day 1 transfer script to create a new transaction.</p>
-    </div>
-
-    <div class="troubleshoot-item">
-      <p class="error">Balance shows 0.00 USDC</p>
-      <p>Fix:</p>
-      <ul>
-        <li>Get more testnet USDC from <strong>https://faucet.circle.com</strong></li>
-        <li>Make sure you are checking the correct wallet address</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="section">
+   <div class="section">
     <h2>What You Learned Today</h2>
 
     <h3>Technical Skills</h3>
@@ -781,31 +648,6 @@ In Day 13-16, we will build the actual UI.</pre>
       <li>The difference between balance and history</li>
       <li>What is Unified Balance</li>
     </ul>
-  </div>
-
-  <div class="section">
-    <h2>Your Project Folder Now</h2>
-    <p>Your <code>arc-project</code> folder should now contain:</p>
-    <pre>arc-project/
-├── .env
-├── package.json
-├── node_modules/
-├── transfer.ts              (from Day 1)
-├── check-balance.ts         (new)
-├── multi-chain-balance.ts   (new)
-├── transaction-history.ts   (new)
-└── dashboard.ts             (new)</pre>
-  </div>
-
-  <div class="section">
-    <h2>Homework (Optional)</h2>
-    <p>Before Day 3, try:</p>
-    <ol>
-      <li><strong>Challenge 1:</strong> Modify <code>check-balance.ts</code> to check 3 different wallet addresses</li>
-      <li><strong>Challenge 2:</strong> Update <code>transaction-history.ts</code> to scan 50 blocks instead of 20</li>
-      <li><strong>Challenge 3:</strong> Create a script that checks if your balance is above 5 USDC and prints "You can afford to send" or "Balance too low"</li>
-    </ol>
-    <p><strong>Bonus Challenge:</strong> Combine balance and history into one script that shows both.</p>
   </div>
 
   <hr />
@@ -837,11 +679,10 @@ In Day 13-16, we will build the actual UI.</pre>
       <li>Send money (Done Day 1)</li>
       <li>Transaction history (Done today)</li>
     </ol>
-    <p><strong>You now have 2/3 of a basic payment app.</strong></p>
-    <p>Tomorrow we will make it production-ready by adding cost estimation.</p>
+    <p><strong>You now have some for a basic payment app.</strong></p>
   </div>
 
-  <p><strong>See you tomorrow for Day 3!</strong></p>
+  <p><strong>See you for Day 3!</strong></p>
 
 </body>
 </html>
