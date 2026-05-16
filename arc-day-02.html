@@ -609,34 +609,7 @@ showDashboard();</pre>
 
   <hr />
 
-  <div class="section">
-    <h2>Summary of Code Fixes</h2>
-
-    <h3>1. Balance Checking</h3>
-    <ul>
-      <li><strong>Problem:</strong> <code>kit.getBalance()</code> does not exist in the SDK</li>
-      <li><strong></strong> Use <code>client.getBalance({ address })</code> with viem directly</li>
-      <li><strong>Problem:</strong> Tutorial says Arc USDC has 6 decimals</li>
-      <li><strong></strong> Arc USDC is the native gas token and uses 18 decimals (like ETH)</li>
-    </ul>
-
-    <h3>2. Adapter Address Resolution</h3>
-    <ul>
-      <li><strong>Problem:</strong> <code>adapter.getAddress()</code> throws "chain parameter is required"</li>
-      <li><strong></strong> Always pass <code>{ chain: "Arc_Testnet" }</code></li>
-    </ul>
-
-    <h3>3. Transaction History</h3>
-    <ul>
-      <li><strong>Problem:</strong> Faucet mints don't show (from zero address)</li>
-      <li><strong></strong> Filter logs to include <code>to === yourAddress</code>, which catches mints</li>
-      <li><strong>Problem:</strong> Arc RPC error "eth_getLogs is limited to a 10,000 range"</li>
-      <li><strong></strong> Split into 9,000-block chunks and scan in batches</li>
-      <li><strong>Problem:</strong> Base Sepolia shows 0 even though you transferred via Rabby</li>
-      <li><strong>Reason:</strong> Transaction is older than 50,000 blocks. Increase scan range or check basescan.org for exact block number</li>
-    </ul>
-  </div>
-
+  
   <div class="section">
     <h2>Your Project Folder Now</h2>
     <pre>arc-project/
