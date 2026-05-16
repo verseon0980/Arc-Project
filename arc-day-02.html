@@ -355,7 +355,6 @@ const arcTestnet = defineChain({
 });
 
 const BASE_SEPOLIA_USDC = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const arcClient = createPublicClient({ chain: arcTestnet, transport: http() });
 const baseClient = createPublicClient({ chain: baseSepolia, transport: http() });
 
@@ -363,66 +362,65 @@ const TRANSFER_EVENT = parseAbiItem(
   "event Transfer(address indexed from, address indexed to, uint256 value)"
 );
 
-const CHUNK = 9000n; // Arc RPC limits getLogs to 10,000 blocks
-
-// Fetch logs in chunks to avoid RPC limit errors
+// Fetch logs in chunks to stay under 10,000 block limit
 const getLogsInChunks = async (
   client: any,
+  address: `0x${string}`,
   fromBlock: bigint,
   toBlock: bigint,
   contractAddress?: `0x${string}`
 ) => {
+  const CHUNK = 9000n;
   const allLogs: any[] = [];
+
   for (let start = fromBlock; start <= toBlock; start += CHUNK) {
     const end = start + CHUNK - 1n < toBlock ? start + CHUNK - 1n : toBlock;
-    const logs = await client.getLogs({
-      ...(contractAddress ? { address: contractAddress } : {}),
-      event: TRANSFER_EVENT,
-      fromBlock: start,
-      toBlock: end,
-    }).catch(() => []);
-    allLogs.push(...logs);
+
+    const [sent, received] = await Promise.all([
+      client.getLogs({
+        ...(contractAddress ? { address: contractAddress } : {}),
+        event: TRANSFER_EVENT,
+        fromBlock: start,
+        toBlock: end,
+        args: { from: address },
+      }).catch(() => []),
+      client.getLogs({
+        ...(contractAddress ? { address: contractAddress } : {}),
+        event: TRANSFER_EVENT,
+        fromBlock: start,
+        toBlock: end,
+        args: { to: address },
+      }).catch(() => []),
+    ]);
+
+    allLogs.push(...sent, ...received);
     process.stdout.write(".");
   }
-  return allLogs;
+
+  console.log(" done!\n");
+  return allLogs.sort((a, b) => Number(b.blockNumber) - Number(a.blockNumber));
 };
 
 const getTransactionHistory = async (address: `0x${string}`) => {
   console.log("Wallet:", address);
   console.log("----------------------------------\n");
 
-  // ── Arc Testnet (scans last 50,000 blocks ~= 28 hours) ────────
+  // ── Arc Testnet ───────────────────────────────────────────────
   console.log("=== Arc Testnet USDC Transactions ===");
   process.stdout.write("Scanning");
 
   const arcLatest = await arcClient.getBlockNumber();
   const arcFrom = arcLatest > 50000n ? arcLatest - 50000n : 0n;
-  const arcAllLogs = await getLogsInChunks(arcClient, arcFrom, arcLatest);
 
-  // Filter for transactions involving your address (sent OR received)
-  const arcLogs = arcAllLogs
-    .filter((log: any) => {
-      const from = log.args.from?.toLowerCase();
-      const to = log.args.to?.toLowerCase();
-      const me = address.toLowerCase();
-      return from === me || to === me;
-    })
-    .sort((a: any, b: any) => Number(b.blockNumber) - Number(a.blockNumber));
-
-  console.log(" done!\n");
+  const arcLogs = await getLogsInChunks(arcClient, address, arcFrom, arcLatest);
 
   if (arcLogs.length === 0) {
-    console.log("No transactions found in last 50,000 blocks on Arc Testnet.");
+    console.log("No transactions found on Arc Testnet.");
     console.log(`View all: https://testnet.arcscan.app/address/${address}\n`);
   } else {
     console.log(`Found ${arcLogs.length} transaction(s):\n`);
     arcLogs.forEach((log: any, i: number) => {
-      const from = log.args.from?.toLowerCase();
-      const me = address.toLowerCase();
-      let dir = "RECEIVED";
-      if (from === me) dir = "SENT";
-      if (from === ZERO_ADDRESS) dir = "RECEIVED (Faucet/Mint)";
-
+      const dir = log.args.from?.toLowerCase() === address.toLowerCase() ? "SENT" : "RECEIVED";
       console.log(`#${i + 1} ${dir}`);
       console.log(`  From:   ${log.args.from}`);
       console.log(`  To:     ${log.args.to}`);
@@ -433,42 +431,28 @@ const getTransactionHistory = async (address: `0x${string}`) => {
     });
   }
 
-  // ── Base Sepolia (scans last 50,000 blocks ~= 7 days) ─────────
+  // ── Base Sepolia ──────────────────────────────────────────────
   console.log("=== Base Sepolia USDC Transactions ===");
   process.stdout.write("Scanning");
 
   const baseLatest = await baseClient.getBlockNumber();
   const baseFrom = baseLatest > 50000n ? baseLatest - 50000n : 0n;
-  const baseAllLogs = await getLogsInChunks(
+
+  const baseLogs = await getLogsInChunks(
     baseClient,
+    address,
     baseFrom,
     baseLatest,
     BASE_SEPOLIA_USDC
   );
 
-  const baseLogs = baseAllLogs
-    .filter((log: any) => {
-      const from = log.args.from?.toLowerCase();
-      const to = log.args.to?.toLowerCase();
-      const me = address.toLowerCase();
-      return from === me || to === me;
-    })
-    .sort((a: any, b: any) => Number(b.blockNumber) - Number(a.blockNumber));
-
-  console.log(" done!\n");
-
   if (baseLogs.length === 0) {
-    console.log("No USDC transfers found in last 50,000 blocks on Base Sepolia.");
+    console.log("No USDC transfers found on Base Sepolia.");
     console.log(`View all: https://sepolia.basescan.org/address/${address}\n`);
   } else {
     console.log(`Found ${baseLogs.length} transaction(s):\n`);
     baseLogs.forEach((log: any, i: number) => {
-      const from = log.args.from?.toLowerCase();
-      const me = address.toLowerCase();
-      let dir = "RECEIVED";
-      if (from === me) dir = "SENT";
-      if (from === ZERO_ADDRESS) dir = "RECEIVED (Faucet/Mint)";
-
+      const dir = log.args.from?.toLowerCase() === address.toLowerCase() ? "SENT" : "RECEIVED";
       console.log(`#${i + 1} ${dir}`);
       console.log(`  From:   ${log.args.from}`);
       console.log(`  To:     ${log.args.to}`);
@@ -490,7 +474,8 @@ const adapter = createViemAdapterFromPrivateKey({
 
 adapter.getAddress({ chain: "Arc_Testnet" }).then((address) => {
   getTransactionHistory(address as `0x${string}`);
-});</pre>
+});
+</pre>
 
     <ol start="4">
       <li>Save the file</li>
