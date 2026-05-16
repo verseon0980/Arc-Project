@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Day 2: Read Wallet Balance and Transaction History - CORRECTED</title>
+  <title>Day 2: Read Wallet Balance and Transaction History </title>
   <style>
     * {
       margin: 0;
@@ -105,7 +105,7 @@
 </head>
 <body>
 
-  <h1>Day 2: Read Wallet Balance and Transaction History (CORRECTED)</h1>
+  <h1>Day 2: Read Wallet Balance and Transaction History </h1>
 
   <div class="section">
     <h2>What You Will Learn Today</h2>
@@ -116,15 +116,39 @@
     </ul>
   </div>
 
-  <div class="warning">
-    <p><strong>IMPORTANT: SDK Issues Fixed</strong></p>
-    <p>The original tutorial code has several breaking issues with the current SDK versions:</p>
+  <div class="section">
+    <h2>Why Are We Doing This?</h2>
+
+    <h3>Why can't I just look at Rabby to see my balance?</h3>
+    <p>You are right. Rabby shows your balance perfectly.</p>
+    <p>But here is why we need code:</p>
+    <p>Imagine you are building the next Venmo or Cash App on Arc.</p>
+
+    <div class="note">
+      <p><strong>User opens your app. What do they see first?</strong></p>
+      <p>"Your Balance: 127.50 USDC"</p>
+      <br>
+      <p>Your app needs to <strong>fetch this balance</strong> and <strong>display it</strong> in your own UI.</p>
+      <p>You cannot tell users: "Open Rabby in another tab to check your balance" - that is terrible UX.</p>
+    </div>
+
+    <h3>What We Are Building</h3>
+    <p>By the end of today, you will have scripts that:</p>
     <ul>
-      <li><code>kit.getBalance()</code> does not exist in the installed SDK</li>
-      <li><code>adapter.getAddress()</code> requires <code>{ chain: "Arc_Testnet" }</code> parameter</li>
-      <li>Arc USDC uses 18 decimals (like ETH), not 6</li>
+      <li>Check USDC balance in any wallet</li>
+      <li>Show recent transaction history</li>
+      <li>Display transaction details (amount, from, to, timestamp)</li>
     </ul>
-    <p>This corrected version uses direct viem calls instead of the broken SDK methods.</p>
+    <p>This is the foundation of any payment app dashboard.</p>
+  </div>
+
+  <div class="section">
+    <h2>Prerequisites</h2>
+    <ul>
+      <li>Day 1 completed (you have a wallet with testnet USDC)</li>
+      <li>Your <code>arc-project</code> folder still exists</li>
+      <li>You remember how to open Terminal in VS Code</li>
+    </ul>
   </div>
 
   <hr />
@@ -166,17 +190,17 @@ const checkBalance = async () => {
     privateKey: process.env.PRIVATE_KEY as string,
   });
 
-  // FIX: getAddress requires chain parameter
+  //  getAddress requires chain parameter
   const address = await adapter.getAddress({ chain: "Arc_Testnet" });
   console.log("Your wallet address:", address);
   console.log("----------------------------------\n");
 
   try {
-    // FIX: Use viem's getBalance directly instead of broken kit.getBalance
+    //  Use viem's getBalance directly instead of broken kit.getBalance
     const client = createPublicClient({ chain: arcTestnet, transport: http() });
     const raw = await client.getBalance({ address });
     
-    // FIX: Arc USDC uses 18 decimals, not 6
+    //  Arc USDC uses 18 decimals, not 6
     const balance = formatUnits(raw, 18);
 
     console.log("Balance fetched successfully");
@@ -591,23 +615,23 @@ showDashboard();</pre>
     <h3>1. Balance Checking</h3>
     <ul>
       <li><strong>Problem:</strong> <code>kit.getBalance()</code> does not exist in the SDK</li>
-      <li><strong>Fix:</strong> Use <code>client.getBalance({ address })</code> with viem directly</li>
+      <li><strong></strong> Use <code>client.getBalance({ address })</code> with viem directly</li>
       <li><strong>Problem:</strong> Tutorial says Arc USDC has 6 decimals</li>
-      <li><strong>Fix:</strong> Arc USDC is the native gas token and uses 18 decimals (like ETH)</li>
+      <li><strong></strong> Arc USDC is the native gas token and uses 18 decimals (like ETH)</li>
     </ul>
 
     <h3>2. Adapter Address Resolution</h3>
     <ul>
       <li><strong>Problem:</strong> <code>adapter.getAddress()</code> throws "chain parameter is required"</li>
-      <li><strong>Fix:</strong> Always pass <code>{ chain: "Arc_Testnet" }</code></li>
+      <li><strong></strong> Always pass <code>{ chain: "Arc_Testnet" }</code></li>
     </ul>
 
     <h3>3. Transaction History</h3>
     <ul>
       <li><strong>Problem:</strong> Faucet mints don't show (from zero address)</li>
-      <li><strong>Fix:</strong> Filter logs to include <code>to === yourAddress</code>, which catches mints</li>
+      <li><strong></strong> Filter logs to include <code>to === yourAddress</code>, which catches mints</li>
       <li><strong>Problem:</strong> Arc RPC error "eth_getLogs is limited to a 10,000 range"</li>
-      <li><strong>Fix:</strong> Split into 9,000-block chunks and scan in batches</li>
+      <li><strong></strong> Split into 9,000-block chunks and scan in batches</li>
       <li><strong>Problem:</strong> Base Sepolia shows 0 even though you transferred via Rabby</li>
       <li><strong>Reason:</strong> Transaction is older than 50,000 blocks. Increase scan range or check basescan.org for exact block number</li>
     </ul>
@@ -620,10 +644,10 @@ showDashboard();</pre>
 ├── package.json
 ├── node_modules/
 ├── transfer.ts              (from Day 1)
-├── check-balance.ts         (corrected)
-├── multi-chain-balance.ts   (corrected)
-├── transaction-history.ts   (corrected)
-└── dashboard.ts             (corrected)</pre>
+├── check-balance.ts         
+├── multi-chain-balance.ts   
+├── transaction-history.ts   
+└── dashboard.ts             </pre>
   </div>
 
   <hr />
